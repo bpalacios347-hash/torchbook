@@ -1,0 +1,5 @@
+# Bot.txt for Torchbook Search Crawlers
+User-agent: *
+Allow: /
+
+Sitemap: https://torchbook-750da.web.app/sitemap.xml

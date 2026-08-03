@@ -1,0 +1,5 @@
+# Robots.txt for Torchbook
+User-agent: *
+Allow: /
+
+Sitemap: https://torchbook-750da.web.app/sitemap.xml

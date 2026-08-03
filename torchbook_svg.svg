@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="400" height="430" viewBox="435 195 410 430" preserveAspectRatio="xMidYMid meet" xml:space="preserve">
+<desc>Torchbook Emblem Icon</desc>
+<defs>
+  <linearGradient id="torchGold" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#FFFBEB" />
+    <stop offset="40%" stop-color="#FBBF24" />
+    <stop offset="100%" stop-color="#D97706" />
+  </linearGradient>
+</defs>
+<g transform="matrix(2.263951000902877 0 0 2.263951000902877 640 411.61291005201474)" id="logo-logo">
+  <g paint-order="stroke">
+    <g transform="matrix(0.143751234643602 0 0 -0.143751234643602 0 0)">
+      <path style="stroke: none; fill: url(#torchGold); fill-rule: nonzero; opacity: 1;" paint-order="stroke" transform="translate(-2982.565, -7805.16)" d="M 3365.32 7791.54 L 3365.32 7791.52 L 3307.99 7761.87 L 3307.99 7827.01 L 3098.31 7827.01 L 3098.31 7975.11 L 2906.68 8100.62 L 2906.68 7827.01 L 2849.41 7827.01 L 2849.41 8132.19 L 2849.41 8132.20 L 3178.27 8302.23 L 3178.27 7875.29 L 3365.32 7972.00 z M 3247.65 7712.32 L 3247.65 7695.72 L 3037.97 7695.72 L 3037.97 7225.06 L 2967.02 7225.06 L 2967.02 7695.72 L 2757.35 7695.72 L 2757.35 7766.67 L 2819.24 7766.67 L 2967.02 7766.67 L 2967.02 7988.98 L 3037.97 7942.5 L 3037.97 7766.67 L 3247.65 7766.67 z M 3425.66 7822.73 L 3425.66 8071.11 L 3238.61 7974.4 L 3238.61 8401.34 L 2849.41 8200.11 L 2849.41 8333.48 L 2391.64 8445.6 L 2391.64 7164.72 L 2639.04 7164.72 L 2639.04 8035.47 L 2744.3 8077.84 L 2753.15 8150.35 L 2578.70 8072.20 L 2578.70 7225.06 L 2451.99 7225.06 L 2451.99 8367.7 L 2789.07 8286.73 L 2789.07 8168.92 L 2789.07 8100.99 L 2789.07 8018.06 L 2789.07 7827.01 L 2697.01 7827.01 L 2697.01 7635.38 L 2906.68 7635.38 L 2906.68 7164.72 L 3098.31 7164.72 L 3098.31 7635.38 L 3307.99 7635.38 L 3307.99 7693.96 L 3365.32 7723.61 L 3425.66 7754.80 L 3513.14 7800.04 L 3513.14 7225.06 L 3425.66 7225.06 L 3425.66 7721.75 L 3365.32 7673.95 L 3365.32 7164.72 L 3573.49 7164.72 L 3573.49 7899.15 L 3425.66 7822.73" stroke-linecap="round" />
+    </g>
+  </g>
+</g>
+</svg>

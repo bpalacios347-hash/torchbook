@@ -1,0 +1,5 @@
+node_modules/
+node-bin/
+.firebase/
+*.exe
+deploy.bat
