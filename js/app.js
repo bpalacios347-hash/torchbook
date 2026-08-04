@@ -2935,9 +2935,29 @@
 
     // ---- Parallel from Dashboard ----
     if (dashBtnParallel) {
-        dashBtnParallel.addEventListener('click', () => {
-            if (!state.parallelMode && dom.parallelToggle) dom.parallelToggle.click();
+        dashBtnParallel.addEventListener('click', async () => {
             switchView('reader');
+
+            // Activate parallel mode if not already on
+            if (!state.parallelMode) {
+                if (!state.bibleData[state.parallelVersion]) {
+                    showToast('Cargando traducción secundaria...');
+                    await loadBibleVersion(state.parallelVersion);
+                }
+                state.parallelMode = true;
+                if (dom.parallelToggle) dom.parallelToggle.classList.add('active');
+                if (dom.parallelVersionWrapper) dom.parallelVersionWrapper.classList.remove('hidden');
+            }
+
+            // If a chapter is already loaded, re-render it in parallel mode
+            if (state.currentBookIndex >= 0 && state.currentChapter >= 0) {
+                renderVerses();
+            } else {
+                // Load Genesis 1 as default for parallel reading
+                state.currentBookIndex = 0;
+                state.currentChapter = 0;
+                renderVerses();
+            }
         });
     }
 
