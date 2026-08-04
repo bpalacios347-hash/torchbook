@@ -2661,7 +2661,7 @@ function switchView(viewName) {
     if (viewReader) viewReader.classList.add('hidden');
     if (viewDashboard) viewDashboard.classList.add('hidden');
     if (viewNotebook) viewNotebook.classList.add('hidden');
-    // Hide calendar later
+    if (typeof viewCalendar !== 'undefined' && viewCalendar) viewCalendar.classList.add('hidden');
 
     if (viewName === 'dashboard') {
         if (viewDashboard) viewDashboard.classList.remove('hidden');
@@ -2671,6 +2671,9 @@ function switchView(viewName) {
     } else if (viewName === 'notebook') {
         if (viewNotebook) viewNotebook.classList.remove('hidden');
         loadSermonsList();
+    } else if (viewName === 'calendar') {
+        if (typeof viewCalendar !== 'undefined' && viewCalendar) viewCalendar.classList.remove('hidden');
+        if (typeof renderCalendar === 'function') renderCalendar();
     }
 }
 
