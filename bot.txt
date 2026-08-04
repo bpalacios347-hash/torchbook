@@ -3,3 +3,5 @@ User-agent: *
 Allow: /
 
 Sitemap: https://torchbook-750da.web.app/sitemap.xml
+Sitemap: https://bpalacios347-hash.github.io/torchbook/sitemap.xml
+
