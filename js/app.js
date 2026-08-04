@@ -2624,7 +2624,7 @@
     }
 
     init();
-})();
+
 
 // --- Views & Dashboard Logic ---
 const viewReader = document.getElementById('view-reader');
@@ -3316,3 +3316,4 @@ window.addEventListener('appinstalled', () => {
     console.log('PWA was installed');
 });
 
+})();
