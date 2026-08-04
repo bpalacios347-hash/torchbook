@@ -170,8 +170,162 @@
             </div>
         </header>
 
-        <!-- Main Layout -->
-        <div class="main-layout">
+        <!-- Dashboard View (Home) -->
+        <div id="view-dashboard" class="view-section hidden">
+            <div class="dashboard-container">
+                <div class="dashboard-header">
+                    <h2>Centro de Complementos</h2>
+                    <p>Gestiona tus recursos de estudio y ministerio.</p>
+                </div>
+                
+                <div class="dashboard-cards">
+                    <!-- Cuaderno Fullscreen -->
+                    <button class="dash-card" id="dash-btn-notebook">
+                        <div class="dash-icon">📓</div>
+                        <div class="dash-text">
+                            <h3>Cuaderno de Notas</h3>
+                            <p>Escribe sermones a pantalla completa y vincula versículos.</p>
+                        </div>
+                    </button>
+
+                    <!-- Calendario de Sermones -->
+                    <button class="dash-card" id="dash-btn-calendar">
+                        <div class="dash-icon">📅</div>
+                        <div class="dash-text">
+                            <h3>Calendario Ministerial</h3>
+                            <p>Agenda sermones, prédicas y asigna temas por iglesia.</p>
+                        </div>
+                    </button>
+
+                    <!-- Lectura Paralela -->
+                    <button class="dash-card" id="dash-btn-parallel">
+                        <div class="dash-icon">📖</div>
+                        <div class="dash-text">
+                            <h3>Lectura Paralela</h3>
+                            <p>Compara traducciones bíblicas lado a lado.</p>
+                        </div>
+                    </button>
+
+                    <!-- Importar / Exportar Datos -->
+                    <div class="dash-card dash-card-actions">
+                        <div class="dash-icon">💾</div>
+                        <div class="dash-text">
+                            <h3>Respaldo de Datos</h3>
+                            <p>Tus datos se guardan en el navegador. Exórtalos para no perderlos.</p>
+                            <div class="dash-buttons">
+                                <button class="btn btn-primary btn-sm" id="btn-export-data">Exportar</button>
+                                <button class="btn btn-secondary btn-sm" id="btn-import-data" onclick="document.getElementById('import-file').click()">Importar</button>
+                                <input type="file" id="import-file" accept=".json" class="hidden">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-footer">
+                    <p class="current-full-date" id="dashboard-full-date">Cargando fecha...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notebook Fullscreen View (Sermons) -->
+        <div id="view-notebook" class="view-section hidden fullscreen-view">
+            <div class="notebook-header">
+                <button class="btn btn-secondary btn-sm" id="notebook-back-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Volver
+                </button>
+                <select id="notebook-sermon-select" class="sermon-select">
+                    <option value="new">-- Nuevo Sermón --</option>
+                </select>
+                <button class="btn btn-primary btn-sm" id="notebook-save-btn">Guardar</button>
+            </div>
+            
+            <div class="notebook-content-area">
+                <input type="text" id="notebook-title" class="notebook-title-input" placeholder="Título del Sermón..." autocomplete="off">
+                <div id="notebook-editor" class="notebook-editor" contenteditable="true" placeholder="Escribe tu sermón aquí. Selecciona cualquier frase para vincularle un versículo..."></div>
+            </div>
+
+            <!-- Verse Linking Popup (Floating) -->
+            <div id="verse-link-popup" class="verse-link-popup hidden">
+                <div class="link-popup-header">Vincular Versículo</div>
+                <input type="text" id="link-verse-input" placeholder="Ej: Juan 3:16" class="link-input">
+                <div class="link-popup-actions">
+                    <button class="btn btn-secondary btn-sm" id="link-cancel-btn">Cancelar</button>
+                    <button class="btn btn-primary btn-sm" id="link-apply-btn">Vincular</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar View -->
+        <div id="view-calendar" class="view-section hidden fullscreen-view">
+            <div class="calendar-header">
+                <button class="btn btn-secondary btn-sm" id="calendar-back-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Volver
+                </button>
+                <div class="calendar-month-nav">
+                    <button class="icon-btn-sm" id="cal-prev-month">❮</button>
+                    <h2 id="calendar-current-month">Agosto 2026</h2>
+                    <button class="icon-btn-sm" id="cal-next-month">❯</button>
+                </div>
+                <div style="width: 80px;"></div> <!-- Spacer -->
+            </div>
+            
+            <div class="calendar-container">
+                <div class="calendar-weekdays">
+                    <div>Dom</div><div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div>
+                </div>
+                <div id="calendar-grid" class="calendar-grid">
+                    <!-- Days will be generated by JS -->
+                </div>
+            </div>
+
+            <!-- Event Scheduling Modal -->
+            <div class="modal-overlay hidden" id="event-modal">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3 class="modal-title" id="event-modal-title">Agendar Actividad</h3>
+                        <button class="modal-close" id="event-modal-close">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="modal-subtitle" id="event-modal-date">4 de Agosto de 2026</p>
+                        <form id="event-form" class="event-form">
+                            <input type="hidden" id="event-date-id">
+                            
+                            <label class="modal-label">Iglesia / Lugar:</label>
+                            <input type="text" id="event-church" class="modal-input" placeholder="Ej: Iglesia Central..." required>
+                            
+                            <label class="modal-label" style="margin-top: 1rem;">Hora:</label>
+                            <input type="time" id="event-time" class="modal-input" required>
+                            
+                            <label class="modal-label" style="margin-top: 1rem;">Tema:</label>
+                            <input type="text" id="event-theme" class="modal-input" placeholder="Tema principal..." required>
+                            
+                            <label class="modal-label" style="margin-top: 1rem;">Datos Adicionales:</label>
+                            <input type="text" id="event-notes" class="modal-input" placeholder="Opcional...">
+                            
+                            <label class="modal-label" style="margin-top: 1rem;">Sermón a Predicar (Cuaderno):</label>
+                            <select id="event-sermon-select" class="modal-input" style="padding: 0.5rem; background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-subtle);">
+                                <option value="">-- Ninguno / Predicación Libre --</option>
+                                <!-- Populated from Notebook -->
+                            </select>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" id="event-modal-delete" style="display:none; color: #ef4444; border-color: #ef4444;">Eliminar</button>
+                        <div style="flex: 1;"></div>
+                        <button class="btn btn-secondary" id="event-modal-cancel">Cancelar</button>
+                        <button class="btn btn-primary" id="event-modal-save">Guardar Evento</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Layout (Bible Reader) -->
+        <div id="view-reader" class="view-section">
+            <div class="main-layout">
             <!-- Sidebar: Navigation Books -->
             <aside class="sidebar" id="sidebar">
                 <div class="sidebar-header">
@@ -760,6 +914,8 @@
             </div>
         </div>
     </div>
+
+    </div> <!-- /view-reader -->
 
     <!-- Toast Notification -->
     <div class="toast hidden" id="toast">

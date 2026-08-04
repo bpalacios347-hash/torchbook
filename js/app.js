@@ -2626,6 +2626,511 @@
     init();
 })();
 
+// --- Views & Dashboard Logic ---
+const viewReader = document.getElementById('view-reader');
+const viewDashboard = document.getElementById('view-dashboard');
+const logoBtn = document.getElementById('logo-btn');
+const dashboardDate = document.getElementById('dashboard-full-date');
+
+const viewNotebook = document.getElementById('view-notebook');
+const dashBtnNotebook = document.getElementById('dash-btn-notebook');
+const notebookBackBtn = document.getElementById('notebook-back-btn');
+const notebookSaveBtn = document.getElementById('notebook-save-btn');
+const notebookTitle = document.getElementById('notebook-title');
+const notebookEditor = document.getElementById('notebook-editor');
+const notebookSermonSelect = document.getElementById('notebook-sermon-select');
+
+// Verse Link Popup
+const verseLinkPopup = document.getElementById('verse-link-popup');
+const linkVerseInput = document.getElementById('link-verse-input');
+const linkApplyBtn = document.getElementById('link-apply-btn');
+const linkCancelBtn = document.getElementById('link-cancel-btn');
+let currentSelectionRange = null;
+
+// Formato de Fecha Completa
+function renderDashboardDate() {
+    if (!dashboardDate) return;
+    const now = new Date();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    let dateString = now.toLocaleDateString('es-ES', options);
+    dateString = dateString.charAt(0).toUpperCase() + dateString.slice(1);
+    dashboardDate.textContent = dateString;
+}
+
+function switchView(viewName) {
+    if (viewReader) viewReader.classList.add('hidden');
+    if (viewDashboard) viewDashboard.classList.add('hidden');
+    if (viewNotebook) viewNotebook.classList.add('hidden');
+    // Hide calendar later
+
+    if (viewName === 'dashboard') {
+        if (viewDashboard) viewDashboard.classList.remove('hidden');
+        renderDashboardDate();
+    } else if (viewName === 'reader') {
+        if (viewReader) viewReader.classList.remove('hidden');
+    } else if (viewName === 'notebook') {
+        if (viewNotebook) viewNotebook.classList.remove('hidden');
+        loadSermonsList();
+    }
+}
+
+// ---- Notebook Logic ----
+function saveSermonsToStorage() {
+    localStorage.setItem('torchbook_sermons', JSON.stringify(state.sermons || {}));
+}
+
+function loadSermonsList() {
+    if (!state.sermons) {
+        const saved = localStorage.getItem('torchbook_sermons');
+        state.sermons = saved ? JSON.parse(saved) : {};
+    }
+    
+    // Populate select
+    if (notebookSermonSelect) {
+        notebookSermonSelect.innerHTML = '<option value="new">-- Nuevo Sermón --</option>';
+        Object.keys(state.sermons).forEach(id => {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = state.sermons[id].title || 'Sin Título';
+            notebookSermonSelect.appendChild(opt);
+        });
+    }
+}
+
+function loadSermon(id) {
+    if (id === 'new') {
+        notebookTitle.value = '';
+        notebookEditor.innerHTML = '';
+        state.currentSermonId = null;
+    } else if (state.sermons && state.sermons[id]) {
+        notebookTitle.value = state.sermons[id].title;
+        notebookEditor.innerHTML = state.sermons[id].content;
+        state.currentSermonId = id;
+    }
+}
+
+function saveCurrentSermon() {
+    if (!state.sermons) state.sermons = {};
+    const title = notebookTitle.value.trim() || 'Sin Título';
+    const content = notebookEditor.innerHTML;
+    
+    let id = state.currentSermonId;
+    if (!id || id === 'new') {
+        id = 'sermon_' + Date.now();
+        state.currentSermonId = id;
+    }
+    
+    state.sermons[id] = { title, content, updated: Date.now() };
+    saveSermonsToStorage();
+    loadSermonsList();
+    notebookSermonSelect.value = id;
+    showToast('Sermón guardado correctamente');
+}
+
+// Event Listeners for Notebook
+if (dashBtnNotebook) {
+    dashBtnNotebook.addEventListener('click', () => {
+        switchView('notebook');
+    });
+}
+if (notebookBackBtn) {
+    notebookBackBtn.addEventListener('click', () => switchView('dashboard'));
+}
+if (notebookSaveBtn) {
+    notebookSaveBtn.addEventListener('click', saveCurrentSermon);
+}
+if (notebookSermonSelect) {
+    notebookSermonSelect.addEventListener('change', (e) => loadSermon(e.target.value));
+}
+
+// ---- Verse Linking Logic ----
+if (notebookEditor) {
+    notebookEditor.addEventListener('mouseup', (e) => {
+        const selection = window.getSelection();
+        if (selection.toString().trim().length > 0) {
+            // Save range to apply link later
+            currentSelectionRange = selection.getRangeAt(0).cloneRange();
+            
+            // Position popup near cursor
+            verseLinkPopup.style.left = e.pageX + 'px';
+            verseLinkPopup.style.top = (e.pageY + 15) + 'px';
+            verseLinkPopup.classList.remove('hidden');
+            linkVerseInput.focus();
+        } else {
+            verseLinkPopup.classList.add('hidden');
+        }
+    });
+}
+
+if (linkCancelBtn) {
+    linkCancelBtn.addEventListener('click', () => {
+        verseLinkPopup.classList.add('hidden');
+        currentSelectionRange = null;
+    });
+}
+
+if (linkApplyBtn) {
+    linkApplyBtn.addEventListener('click', () => {
+        const reference = linkVerseInput.value.trim();
+        if (reference && currentSelectionRange) {
+            // Check if user has selected text
+            const a = document.createElement('a');
+            a.className = 'verse-link';
+            a.href = '#';
+            a.setAttribute('data-ref', reference);
+            
+            // Extract selected content and put it inside the link
+            a.appendChild(currentSelectionRange.extractContents());
+            currentSelectionRange.insertNode(a);
+            
+            // Add click listener to the newly created link
+            a.addEventListener('click', (ev) => {
+                ev.preventDefault();
+                // User clicked a linked verse in their notebook. 
+                // We should parse the reference and search for it or open the reader.
+                dom.searchInput.value = reference;
+                dom.searchInput.focus();
+                switchView('reader');
+            });
+            
+            verseLinkPopup.classList.add('hidden');
+            linkVerseInput.value = '';
+            currentSelectionRange = null;
+            
+            // Clean up selection
+            window.getSelection().removeAllRanges();
+        }
+    });
+}
+
+// Make sure old saved links in the editor work when loaded
+notebookEditor?.addEventListener('click', (e) => {
+    if (e.target.tagName === 'A' && e.target.classList.contains('verse-link')) {
+        e.preventDefault();
+        const ref = e.target.getAttribute('data-ref');
+        if (ref) {
+            if(dom.searchInput) {
+                dom.searchInput.value = ref;
+                dom.searchInput.focus();
+            }
+            switchView('reader');
+            setTimeout(() => {
+                dom.searchInput.dispatchEvent(new KeyboardEvent('keydown', {'key': 'Enter'}));
+            }, 300);
+        }
+    }
+});
+
+// ---- Calendar Logic ----
+const viewCalendar = document.getElementById('view-calendar');
+const dashBtnCalendar = document.getElementById('dash-btn-calendar');
+const calendarBackBtn = document.getElementById('calendar-back-btn');
+const calGrid = document.getElementById('calendar-grid');
+const calMonthText = document.getElementById('calendar-current-month');
+const calPrevBtn = document.getElementById('cal-prev-month');
+const calNextBtn = document.getElementById('cal-next-month');
+
+const eventModal = document.getElementById('event-modal');
+const eventModalCloseBtn = document.getElementById('event-modal-close');
+const eventModalCancelBtn = document.getElementById('event-modal-cancel');
+const eventModalSaveBtn = document.getElementById('event-modal-save');
+const eventModalDeleteBtn = document.getElementById('event-modal-delete');
+const eventModalDateText = document.getElementById('event-modal-date');
+const eventDateIdInput = document.getElementById('event-date-id');
+const eventSermonSelect = document.getElementById('event-sermon-select');
+
+let currentDate = new Date();
+
+function saveCalendarEvents() {
+    localStorage.setItem('torchbook_calendar_events', JSON.stringify(state.calendarEvents || {}));
+}
+
+function loadCalendarEvents() {
+    if (!state.calendarEvents) {
+        const saved = localStorage.getItem('torchbook_calendar_events');
+        state.calendarEvents = saved ? JSON.parse(saved) : {};
+    }
+}
+
+function renderCalendar() {
+    loadCalendarEvents();
+    if (!calGrid) return;
+    
+    calGrid.innerHTML = '';
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    if (calMonthText) calMonthText.textContent = `${monthNames[month]} ${year}`;
+    
+    // Empty boxes for days before start of month
+    for (let i = 0; i < firstDay; i++) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'calendar-day empty-day';
+        calGrid.appendChild(emptyDiv);
+    }
+    
+    const today = new Date();
+    const isCurrentMonth = (today.getMonth() === month && today.getFullYear() === year);
+    
+    for (let i = 1; i <= daysInMonth; i++) {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day';
+        if (isCurrentMonth && i === today.getDate()) {
+            dayDiv.classList.add('today');
+        }
+        
+        const dateId = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        
+        const numDiv = document.createElement('div');
+        numDiv.className = 'day-number';
+        numDiv.textContent = i;
+        dayDiv.appendChild(numDiv);
+        
+        const eventsContainer = document.createElement('div');
+        eventsContainer.className = 'day-events';
+        
+        if (state.calendarEvents && state.calendarEvents[dateId]) {
+            const ev = state.calendarEvents[dateId];
+            const pill = document.createElement('div');
+            pill.className = 'cal-event-pill';
+            pill.textContent = `${ev.time} - ${ev.church}`;
+            eventsContainer.appendChild(pill);
+        }
+        
+        dayDiv.appendChild(eventsContainer);
+        
+        dayDiv.addEventListener('click', () => openEventModal(dateId, i, monthNames[month], year));
+        calGrid.appendChild(dayDiv);
+    }
+}
+
+function updateEventModalSermons() {
+    if (!eventSermonSelect) return;
+    eventSermonSelect.innerHTML = '<option value="">-- Ninguno / Predicación Libre --</option>';
+    if (state.sermons) {
+        Object.keys(state.sermons).forEach(id => {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = state.sermons[id].title || 'Sin Título';
+            eventSermonSelect.appendChild(opt);
+        });
+    }
+}
+
+function openEventModal(dateId, dayNum, monthName, year) {
+    if (!eventModal) return;
+    
+    // Ensure sermons are loaded so we can populate the dropdown
+    loadSermonsList();
+    updateEventModalSermons();
+    
+    eventDateIdInput.value = dateId;
+    eventModalDateText.textContent = `${dayNum} de ${monthName} de ${year}`;
+    
+    // Clear or fill form
+    if (state.calendarEvents && state.calendarEvents[dateId]) {
+        const ev = state.calendarEvents[dateId];
+        document.getElementById('event-church').value = ev.church || '';
+        document.getElementById('event-time').value = ev.time || '';
+        document.getElementById('event-theme').value = ev.theme || '';
+        document.getElementById('event-notes').value = ev.notes || '';
+        document.getElementById('event-sermon-select').value = ev.sermonId || '';
+        eventModalDeleteBtn.style.display = 'block';
+    } else {
+        document.getElementById('event-church').value = '';
+        document.getElementById('event-time').value = '10:00';
+        document.getElementById('event-theme').value = '';
+        document.getElementById('event-notes').value = '';
+        document.getElementById('event-sermon-select').value = '';
+        eventModalDeleteBtn.style.display = 'none';
+    }
+    
+    eventModal.classList.remove('hidden');
+}
+
+function closeEventModal() {
+    if (eventModal) eventModal.classList.add('hidden');
+}
+
+function saveEvent() {
+    const dateId = eventDateIdInput.value;
+    if (!dateId) return;
+    
+    const church = document.getElementById('event-church').value.trim();
+    const time = document.getElementById('event-time').value;
+    const theme = document.getElementById('event-theme').value.trim();
+    
+    if (!church || !time || !theme) {
+        showToast('Por favor completa Iglesia, Hora y Tema');
+        return;
+    }
+    
+    if (!state.calendarEvents) state.calendarEvents = {};
+    
+    state.calendarEvents[dateId] = {
+        church,
+        time,
+        theme,
+        notes: document.getElementById('event-notes').value.trim(),
+        sermonId: document.getElementById('event-sermon-select').value
+    };
+    
+    saveCalendarEvents();
+    closeEventModal();
+    renderCalendar();
+    showToast('Evento agendado');
+}
+
+function deleteEvent() {
+    const dateId = eventDateIdInput.value;
+    if (dateId && state.calendarEvents && state.calendarEvents[dateId]) {
+        delete state.calendarEvents[dateId];
+        saveCalendarEvents();
+        closeEventModal();
+        renderCalendar();
+        showToast('Evento eliminado');
+    }
+}
+
+// Calendar Event Listeners
+if (dashBtnCalendar) {
+    dashBtnCalendar.addEventListener('click', () => {
+        switchView('calendar');
+    });
+}
+
+if (calendarBackBtn) {
+    calendarBackBtn.addEventListener('click', () => switchView('dashboard'));
+}
+
+if (calPrevBtn) {
+    calPrevBtn.addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar();
+    });
+}
+
+if (calNextBtn) {
+    calNextBtn.addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
+    });
+}
+
+[eventModalCloseBtn, eventModalCancelBtn].forEach(btn => {
+    if (btn) btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeEventModal();
+    });
+});
+
+if (eventModalSaveBtn) {
+    eventModalSaveBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        saveEvent();
+    });
+}
+
+if (eventModalDeleteBtn) {
+    eventModalDeleteBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        deleteEvent();
+    });
+}
+
+// Modify switchView to also handle calendar
+const originalSwitchView = switchView;
+switchView = function(viewName) {
+    if (viewCalendar) viewCalendar.classList.add('hidden');
+    originalSwitchView(viewName);
+    
+    if (viewName === 'calendar') {
+        if (viewCalendar) viewCalendar.classList.remove('hidden');
+        renderCalendar();
+    }
+}
+
+// ---- Data Import / Export Logic ----
+const btnExportData = document.getElementById('btn-export-data');
+const btnImportData = document.getElementById('import-file'); // The hidden input file
+const dashBtnParallel = document.getElementById('dash-btn-parallel');
+
+if (dashBtnParallel) {
+    dashBtnParallel.addEventListener('click', () => {
+        const parallelToggle = document.getElementById('parallel-toggle');
+        if (parallelToggle && !state.isParallel) {
+            parallelToggle.click(); // Activate parallel mode
+        }
+        switchView('reader');
+    });
+}
+
+if (btnExportData) {
+    btnExportData.addEventListener('click', () => {
+        const dataToExport = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('torchbook_')) {
+                dataToExport[key] = localStorage.getItem(key);
+            }
+        }
+        
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataToExport));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `torchbook_backup_${new Date().toISOString().split('T')[0]}.json`);
+        document.body.appendChild(downloadAnchorNode); // required for firefox
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+        showToast("Backup exportado correctamente");
+    });
+}
+
+if (btnImportData) {
+    btnImportData.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                let count = 0;
+                for (const key in importedData) {
+                    if (key.startsWith('torchbook_')) {
+                        localStorage.setItem(key, importedData[key]);
+                        count++;
+                    }
+                }
+                if (count > 0) {
+                    alert('Datos importados correctamente. La aplicación se recargará para aplicar los cambios.');
+                    window.location.reload();
+                } else {
+                    showToast('El archivo no contiene datos válidos de Torchbook');
+                }
+            } catch (err) {
+                showToast('Error al leer el archivo. Formato inválido.');
+                console.error(err);
+            }
+        };
+        reader.readAsText(file);
+    });
+}
+
+// Logo takes you to Dashboard now
+if (logoBtn) {
+    logoBtn.addEventListener('click', () => {
+        switchView('dashboard');
+    });
+}
+
+// Set initial view to Dashboard
+switchView('dashboard');
+
 // --- Mobile Navigation & Settings Logic ---
 const bottomNav = document.getElementById('bottom-nav');
 const mobileSettingsSheet = document.getElementById('mobile-settings-sheet');
@@ -2647,6 +3152,7 @@ function updateActiveNav(activeBtn) {
 if (navHome) {
     navHome.addEventListener('click', () => {
         updateActiveNav(navHome);
+        switchView('reader');
         window.scrollTo(0, 0);
         // Cierra modales si estuvieran abiertos
         const modales = document.querySelectorAll('.modal');
