@@ -2671,10 +2671,15 @@ function switchView(viewName) {
     } else if (viewName === 'notebook') {
         if (viewNotebook) viewNotebook.classList.remove('hidden');
         loadSermonsList();
-    } else if (viewName === 'calendar') {
+    if (viewName === 'calendar') {
         if (typeof viewCalendar !== 'undefined' && viewCalendar) viewCalendar.classList.remove('hidden');
         if (typeof renderCalendar === 'function') renderCalendar();
     }
+}
+
+const headerHomeBtn = document.getElementById('header-home-btn');
+if (headerHomeBtn) {
+    headerHomeBtn.addEventListener('click', () => switchView('dashboard'));
 }
 
 // ---- Notebook Logic ----
@@ -3065,7 +3070,7 @@ const dashBtnParallel = document.getElementById('dash-btn-parallel');
 if (dashBtnParallel) {
     dashBtnParallel.addEventListener('click', () => {
         const parallelToggle = document.getElementById('parallel-toggle');
-        if (parallelToggle && !state.isParallel) {
+        if (parallelToggle && !state.parallelMode) {
             parallelToggle.click(); // Activate parallel mode
         }
         switchView('reader');

@@ -3427,6 +3427,13 @@ body {
     background: var(--bg-color);
 }
 
+@media (max-width: 768px) {
+    .parallel-verses-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
 .calendar-header {
     display: flex;
     justify-content: space-between;
