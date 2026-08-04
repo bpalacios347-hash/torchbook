@@ -2626,6 +2626,141 @@
     init();
 })();
 
+// --- Mobile Navigation & Settings Logic ---
+const bottomNav = document.getElementById('bottom-nav');
+const mobileSettingsSheet = document.getElementById('mobile-settings-sheet');
+const mobileSheetOverlay = document.getElementById('mobile-sheet-overlay');
+const closeMobileSettingsBtn = document.getElementById('close-mobile-settings');
+
+const navHome = document.getElementById('nav-home');
+const navDictionary = document.getElementById('nav-dictionary');
+const navPlans = document.getElementById('nav-plans');
+const navSettings = document.getElementById('nav-settings');
+
+function updateActiveNav(activeBtn) {
+    [navHome, navDictionary, navPlans, navSettings].forEach(btn => {
+        if(btn) btn.classList.remove('active');
+    });
+    if(activeBtn) activeBtn.classList.add('active');
+}
+
+if (navHome) {
+    navHome.addEventListener('click', () => {
+        updateActiveNav(navHome);
+        window.scrollTo(0, 0);
+        // Cierra modales si estuvieran abiertos
+        const modales = document.querySelectorAll('.modal');
+        modales.forEach(m => m.classList.add('hidden'));
+    });
+}
+
+if (navDictionary) {
+    navDictionary.addEventListener('click', () => {
+        updateActiveNav(navDictionary);
+        const btnOpenDict = document.getElementById('btn-open-dictionary');
+        if (btnOpenDict) btnOpenDict.click();
+    });
+}
+
+if (navPlans) {
+    navPlans.addEventListener('click', () => {
+        updateActiveNav(navPlans);
+        const btnOpenPlans = document.getElementById('btn-open-reading-plans');
+        if (btnOpenPlans) btnOpenPlans.click();
+    });
+}
+
+function openMobileSettings() {
+    updateActiveNav(navSettings);
+    if (mobileSettingsSheet) {
+        mobileSettingsSheet.classList.remove('hidden');
+    }
+}
+
+function closeMobileSettings() {
+    updateActiveNav(navHome); // Vuelve a marcar inicio
+    if (mobileSettingsSheet) {
+        mobileSettingsSheet.classList.add('hidden');
+    }
+}
+
+if (navSettings) {
+    navSettings.addEventListener('click', openMobileSettings);
+}
+
+if (closeMobileSettingsBtn) {
+    closeMobileSettingsBtn.addEventListener('click', closeMobileSettings);
+}
+
+if (mobileSheetOverlay) {
+    mobileSheetOverlay.addEventListener('click', closeMobileSettings);
+}
+
+// Conectar controles del Modal Móvil con los globales
+const mobileThemeOptions = document.querySelectorAll('.mobile-sheet .theme-option');
+mobileThemeOptions.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        // Simular clic en el menú real
+        const theme = e.target.getAttribute('data-theme');
+        const realThemeBtn = document.querySelector(`.theme-dropdown-menu .theme-option[data-theme="${theme}"]`);
+        if (realThemeBtn) realThemeBtn.click();
+        
+        // Actualizar UI móvil
+        mobileThemeOptions.forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+    });
+});
+
+const mobileFontDec = document.getElementById('mobile-font-decrease');
+const mobileFontInc = document.getElementById('mobile-font-increase');
+const mobileFontToggle = document.getElementById('mobile-font-family-toggle');
+if (mobileFontDec) mobileFontDec.addEventListener('click', () => document.getElementById('font-decrease')?.click());
+if (mobileFontInc) mobileFontInc.addEventListener('click', () => document.getElementById('font-increase')?.click());
+if (mobileFontToggle) mobileFontToggle.addEventListener('click', () => document.getElementById('font-family-toggle')?.click());
+
+const mobileVerSelect = document.getElementById('mobile-version-select');
+if (mobileVerSelect) {
+    mobileVerSelect.addEventListener('change', (e) => {
+        const realVerSelect = document.getElementById('version-select');
+        if (realVerSelect) {
+            realVerSelect.value = e.target.value;
+            realVerSelect.dispatchEvent(new Event('change'));
+        }
+    });
+}
+
+const mobileParallelToggle = document.getElementById('mobile-parallel-toggle');
+const mobileParallelSelect = document.getElementById('mobile-parallel-version-select');
+if (mobileParallelToggle) {
+    mobileParallelToggle.addEventListener('click', () => {
+        const realParallelToggle = document.getElementById('parallel-toggle');
+        if (realParallelToggle) realParallelToggle.click();
+        
+        if (mobileParallelSelect.classList.contains('hidden')) {
+            mobileParallelSelect.classList.remove('hidden');
+            mobileParallelToggle.textContent = "Desactivar";
+        } else {
+            mobileParallelSelect.classList.add('hidden');
+            mobileParallelToggle.textContent = "Activar";
+        }
+    });
+}
+
+if (mobileParallelSelect) {
+    mobileParallelSelect.addEventListener('change', (e) => {
+        const realParallelSelect = document.getElementById('parallel-version-select');
+        if (realParallelSelect) {
+            realParallelSelect.value = e.target.value;
+            realParallelSelect.dispatchEvent(new Event('change'));
+        }
+    });
+}
+
+// Sincronizar selectores iniciales
+if (mobileVerSelect && document.getElementById('version-select')) {
+    mobileVerSelect.value = document.getElementById('version-select').value;
+}
+
 // --- PWA Installation Logic ---
 let deferredPrompt;
 const pwaToast = document.getElementById('pwa-install-toast');
