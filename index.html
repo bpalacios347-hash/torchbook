@@ -18,6 +18,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <link rel="icon" type="image/svg+xml" href="torchbook_svg.svg">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="theme-dark font-lora">
@@ -781,5 +783,35 @@
     </script>
 
     <script src="js/app.js"></script>
+
+    <!-- PWA Install Prompt Toast -->
+    <div id="pwa-install-toast" class="pwa-toast hidden">
+        <div class="pwa-toast-content">
+            <div class="pwa-toast-icon">
+                <img src="torchbook_svg.svg" alt="Torchbook Icon" width="32" height="32">
+            </div>
+            <div class="pwa-toast-text">
+                <strong>Instalar Torchbook</strong>
+                <span>Agrega la app para acceso rápido y sin conexión.</span>
+            </div>
+        </div>
+        <div class="pwa-toast-actions">
+            <button id="pwa-install-btn" class="btn btn-primary">Instalar</button>
+            <button id="pwa-dismiss-btn" class="btn btn-secondary">Ahora no</button>
+        </div>
+    </div>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then((registration) => {
+                    console.log('ServiceWorker registrado con éxito: ', registration.scope);
+                }, (err) => {
+                    console.log('Fallo el registro del ServiceWorker: ', err);
+                });
+            });
+        }
+    </script>
 </body>
 </html>

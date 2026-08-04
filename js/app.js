@@ -2625,3 +2625,50 @@
 
     init();
 })();
+
+// --- PWA Installation Logic ---
+let deferredPrompt;
+const pwaToast = document.getElementById('pwa-install-toast');
+const pwaInstallBtn = document.getElementById('pwa-install-btn');
+const pwaDismissBtn = document.getElementById('pwa-dismiss-btn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (pwaToast) {
+        pwaToast.classList.remove('hidden');
+        setTimeout(() => pwaToast.classList.add('show'), 100);
+    }
+});
+
+if (pwaInstallBtn) {
+    pwaInstallBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        
+        pwaToast.classList.remove('show');
+        setTimeout(() => pwaToast.classList.add('hidden'), 400);
+
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+        
+        deferredPrompt = null;
+    });
+}
+
+if (pwaDismissBtn) {
+    pwaDismissBtn.addEventListener('click', () => {
+        pwaToast.classList.remove('show');
+        setTimeout(() => pwaToast.classList.add('hidden'), 400);
+    });
+}
+
+window.addEventListener('appinstalled', () => {
+    if (pwaToast) {
+        pwaToast.classList.remove('show');
+        setTimeout(() => pwaToast.classList.add('hidden'), 400);
+    }
+    deferredPrompt = null;
+    console.log('PWA was installed');
+});
+
