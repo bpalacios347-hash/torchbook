@@ -2623,702 +2623,372 @@
         });
     }
 
-    init();
+    // =============================================
+    // --- Views, Dashboard, Notebook & Calendar ---
+    // =============================================
 
+    // DOM References for new views
+    const viewReader = document.getElementById('view-reader');
+    const viewDashboard = document.getElementById('view-dashboard');
+    const viewNotebook = document.getElementById('view-notebook');
+    const viewCalendar = document.getElementById('view-calendar');
+    const logoBtn = document.getElementById('logo-btn');
+    const dashboardDate = document.getElementById('dashboard-full-date');
+    const headerHomeBtn = document.getElementById('header-home-btn');
 
-// --- Views & Dashboard Logic ---
-const viewReader = document.getElementById('view-reader');
-const viewDashboard = document.getElementById('view-dashboard');
-const logoBtn = document.getElementById('logo-btn');
-const dashboardDate = document.getElementById('dashboard-full-date');
+    // Notebook DOM
+    const dashBtnNotebook = document.getElementById('dash-btn-notebook');
+    const notebookBackBtn = document.getElementById('notebook-back-btn');
+    const notebookSaveBtn = document.getElementById('notebook-save-btn');
+    const notebookTitle = document.getElementById('notebook-title');
+    const notebookEditor = document.getElementById('notebook-editor');
+    const notebookSermonSelect = document.getElementById('notebook-sermon-select');
+    const verseLinkPopup = document.getElementById('verse-link-popup');
+    const linkVerseInput = document.getElementById('link-verse-input');
+    const linkApplyBtn = document.getElementById('link-apply-btn');
+    const linkCancelBtn = document.getElementById('link-cancel-btn');
+    let currentSelectionRange = null;
 
-const viewNotebook = document.getElementById('view-notebook');
-const dashBtnNotebook = document.getElementById('dash-btn-notebook');
-const notebookBackBtn = document.getElementById('notebook-back-btn');
-const notebookSaveBtn = document.getElementById('notebook-save-btn');
-const notebookTitle = document.getElementById('notebook-title');
-const notebookEditor = document.getElementById('notebook-editor');
-const notebookSermonSelect = document.getElementById('notebook-sermon-select');
+    // Calendar DOM
+    const dashBtnCalendar = document.getElementById('dash-btn-calendar');
+    const calendarBackBtn = document.getElementById('calendar-back-btn');
+    const calGrid = document.getElementById('calendar-grid');
+    const calMonthText = document.getElementById('calendar-current-month');
+    const calPrevBtn = document.getElementById('cal-prev-month');
+    const calNextBtn = document.getElementById('cal-next-month');
+    const eventModal = document.getElementById('event-modal');
+    const eventModalCloseBtn = document.getElementById('event-modal-close');
+    const eventModalCancelBtn = document.getElementById('event-modal-cancel');
+    const eventModalSaveBtn = document.getElementById('event-modal-save');
+    const eventModalDeleteBtn = document.getElementById('event-modal-delete');
+    const eventModalDateText = document.getElementById('event-modal-date');
+    const eventDateIdInput = document.getElementById('event-date-id');
+    const eventSermonSelect = document.getElementById('event-sermon-select');
+    let calCurrentDate = new Date();
 
-// Verse Link Popup
-const verseLinkPopup = document.getElementById('verse-link-popup');
-const linkVerseInput = document.getElementById('link-verse-input');
-const linkApplyBtn = document.getElementById('link-apply-btn');
-const linkCancelBtn = document.getElementById('link-cancel-btn');
-let currentSelectionRange = null;
+    // Parallel / Import-Export DOM
+    const dashBtnParallel = document.getElementById('dash-btn-parallel');
+    const btnExportData = document.getElementById('btn-export-data');
+    const btnImportData = document.getElementById('import-file');
 
-// Formato de Fecha Completa
-function renderDashboardDate() {
-    if (!dashboardDate) return;
-    const now = new Date();
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    let dateString = now.toLocaleDateString('es-ES', options);
-    dateString = dateString.charAt(0).toUpperCase() + dateString.slice(1);
-    dashboardDate.textContent = dateString;
-}
+    // ---- Dashboard Date ----
+    function renderDashboardDate() {
+        if (!dashboardDate) return;
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        let dateString = now.toLocaleDateString('es-ES', options);
+        dashboardDate.textContent = dateString.charAt(0).toUpperCase() + dateString.slice(1);
+    }
 
-function switchView(viewName) {
-    if (viewReader) viewReader.classList.add('hidden');
-    if (viewDashboard) viewDashboard.classList.add('hidden');
-    if (viewNotebook) viewNotebook.classList.add('hidden');
-    if (typeof viewCalendar !== 'undefined' && viewCalendar) viewCalendar.classList.add('hidden');
+    // ---- View Switcher ----
+    function switchView(viewName) {
+        [viewReader, viewDashboard, viewNotebook, viewCalendar].forEach(v => {
+            if (v) v.classList.add('hidden');
+        });
+        if (viewName === 'dashboard') {
+            if (viewDashboard) viewDashboard.classList.remove('hidden');
+            renderDashboardDate();
+        } else if (viewName === 'reader') {
+            if (viewReader) viewReader.classList.remove('hidden');
+        } else if (viewName === 'notebook') {
+            if (viewNotebook) viewNotebook.classList.remove('hidden');
+            loadSermonsList();
+        } else if (viewName === 'calendar') {
+            if (viewCalendar) viewCalendar.classList.remove('hidden');
+            renderCalendar();
+        }
+    }
 
-    if (viewName === 'dashboard') {
-        if (viewDashboard) viewDashboard.classList.remove('hidden');
-        renderDashboardDate();
-    } else if (viewName === 'reader') {
-        if (viewReader) viewReader.classList.remove('hidden');
-    } else if (viewName === 'notebook') {
-        if (viewNotebook) viewNotebook.classList.remove('hidden');
+    if (headerHomeBtn) headerHomeBtn.addEventListener('click', () => switchView('dashboard'));
+    if (logoBtn) logoBtn.addEventListener('click', () => switchView('dashboard'));
+
+    // ---- Notebook / Sermons ----
+    function saveSermonsToStorage() {
+        localStorage.setItem('torchbook_sermons', JSON.stringify(state.sermons || {}));
+    }
+
+    function loadSermonsList() {
+        if (!state.sermons) {
+            const saved = localStorage.getItem('torchbook_sermons');
+            state.sermons = saved ? JSON.parse(saved) : {};
+        }
+        if (notebookSermonSelect) {
+            notebookSermonSelect.innerHTML = '<option value="new">-- Nuevo Sermón --</option>';
+            Object.keys(state.sermons).forEach(id => {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = state.sermons[id].title || 'Sin Título';
+                notebookSermonSelect.appendChild(opt);
+            });
+        }
+    }
+
+    function loadSermon(id) {
+        if (!notebookTitle || !notebookEditor) return;
+        if (id === 'new') {
+            notebookTitle.value = '';
+            notebookEditor.innerHTML = '';
+            state.currentSermonId = null;
+        } else if (state.sermons && state.sermons[id]) {
+            notebookTitle.value = state.sermons[id].title;
+            notebookEditor.innerHTML = state.sermons[id].content;
+            state.currentSermonId = id;
+        }
+    }
+
+    function saveCurrentSermon() {
+        if (!state.sermons) state.sermons = {};
+        const title = notebookTitle.value.trim() || 'Sin Título';
+        const content = notebookEditor.innerHTML;
+        let id = state.currentSermonId;
+        if (!id) {
+            id = 'sermon_' + Date.now();
+            state.currentSermonId = id;
+        }
+        state.sermons[id] = { title, content, updated: Date.now() };
+        saveSermonsToStorage();
         loadSermonsList();
-    } else if (viewName === 'calendar') {
-        if (typeof viewCalendar !== 'undefined' && viewCalendar) viewCalendar.classList.remove('hidden');
-        if (typeof renderCalendar === 'function') renderCalendar();
+        if (notebookSermonSelect) notebookSermonSelect.value = id;
+        showToast('Sermón guardado ✓');
     }
-}
 
-const headerHomeBtn = document.getElementById('header-home-btn');
-if (headerHomeBtn) {
-    headerHomeBtn.addEventListener('click', () => switchView('dashboard'));
-}
+    if (dashBtnNotebook) dashBtnNotebook.addEventListener('click', () => switchView('notebook'));
+    if (notebookBackBtn) notebookBackBtn.addEventListener('click', () => switchView('dashboard'));
+    if (notebookSaveBtn) notebookSaveBtn.addEventListener('click', saveCurrentSermon);
+    if (notebookSermonSelect) notebookSermonSelect.addEventListener('change', (e) => loadSermon(e.target.value));
 
-// ---- Notebook Logic ----
-function saveSermonsToStorage() {
-    localStorage.setItem('torchbook_sermons', JSON.stringify(state.sermons || {}));
-}
+    // Verse Link Popup
+    if (notebookEditor) {
+        notebookEditor.addEventListener('mouseup', (e) => {
+            const selection = window.getSelection();
+            if (selection && selection.toString().trim().length > 0) {
+                currentSelectionRange = selection.getRangeAt(0).cloneRange();
+                verseLinkPopup.style.left = e.pageX + 'px';
+                verseLinkPopup.style.top = (e.pageY + 15) + 'px';
+                verseLinkPopup.classList.remove('hidden');
+                if (linkVerseInput) linkVerseInput.focus();
+            } else {
+                verseLinkPopup.classList.add('hidden');
+            }
+        });
 
-function loadSermonsList() {
-    if (!state.sermons) {
-        const saved = localStorage.getItem('torchbook_sermons');
-        state.sermons = saved ? JSON.parse(saved) : {};
-    }
-    
-    // Populate select
-    if (notebookSermonSelect) {
-        notebookSermonSelect.innerHTML = '<option value="new">-- Nuevo Sermón --</option>';
-        Object.keys(state.sermons).forEach(id => {
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.textContent = state.sermons[id].title || 'Sin Título';
-            notebookSermonSelect.appendChild(opt);
+        notebookEditor.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A' && e.target.classList.contains('verse-link')) {
+                e.preventDefault();
+                const ref = e.target.getAttribute('data-ref');
+                if (ref && dom.searchInput) {
+                    dom.searchInput.value = ref;
+                    switchView('reader');
+                    setTimeout(() => {
+                        dom.searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+                    }, 300);
+                }
+            }
         });
     }
-}
 
-function loadSermon(id) {
-    if (id === 'new') {
-        notebookTitle.value = '';
-        notebookEditor.innerHTML = '';
-        state.currentSermonId = null;
-    } else if (state.sermons && state.sermons[id]) {
-        notebookTitle.value = state.sermons[id].title;
-        notebookEditor.innerHTML = state.sermons[id].content;
-        state.currentSermonId = id;
-    }
-}
-
-function saveCurrentSermon() {
-    if (!state.sermons) state.sermons = {};
-    const title = notebookTitle.value.trim() || 'Sin Título';
-    const content = notebookEditor.innerHTML;
-    
-    let id = state.currentSermonId;
-    if (!id || id === 'new') {
-        id = 'sermon_' + Date.now();
-        state.currentSermonId = id;
-    }
-    
-    state.sermons[id] = { title, content, updated: Date.now() };
-    saveSermonsToStorage();
-    loadSermonsList();
-    notebookSermonSelect.value = id;
-    showToast('Sermón guardado correctamente');
-}
-
-// Event Listeners for Notebook
-if (dashBtnNotebook) {
-    dashBtnNotebook.addEventListener('click', () => {
-        switchView('notebook');
-    });
-}
-if (notebookBackBtn) {
-    notebookBackBtn.addEventListener('click', () => switchView('dashboard'));
-}
-if (notebookSaveBtn) {
-    notebookSaveBtn.addEventListener('click', saveCurrentSermon);
-}
-if (notebookSermonSelect) {
-    notebookSermonSelect.addEventListener('change', (e) => loadSermon(e.target.value));
-}
-
-// ---- Verse Linking Logic ----
-if (notebookEditor) {
-    notebookEditor.addEventListener('mouseup', (e) => {
-        const selection = window.getSelection();
-        if (selection.toString().trim().length > 0) {
-            // Save range to apply link later
-            currentSelectionRange = selection.getRangeAt(0).cloneRange();
-            
-            // Position popup near cursor
-            verseLinkPopup.style.left = e.pageX + 'px';
-            verseLinkPopup.style.top = (e.pageY + 15) + 'px';
-            verseLinkPopup.classList.remove('hidden');
-            linkVerseInput.focus();
-        } else {
-            verseLinkPopup.classList.add('hidden');
-        }
-    });
-}
-
-if (linkCancelBtn) {
-    linkCancelBtn.addEventListener('click', () => {
+    if (linkCancelBtn) linkCancelBtn.addEventListener('click', () => {
         verseLinkPopup.classList.add('hidden');
         currentSelectionRange = null;
     });
-}
 
-if (linkApplyBtn) {
-    linkApplyBtn.addEventListener('click', () => {
+    if (linkApplyBtn) linkApplyBtn.addEventListener('click', () => {
         const reference = linkVerseInput.value.trim();
         if (reference && currentSelectionRange) {
-            // Check if user has selected text
             const a = document.createElement('a');
             a.className = 'verse-link';
             a.href = '#';
             a.setAttribute('data-ref', reference);
-            
-            // Extract selected content and put it inside the link
             a.appendChild(currentSelectionRange.extractContents());
             currentSelectionRange.insertNode(a);
-            
-            // Add click listener to the newly created link
-            a.addEventListener('click', (ev) => {
-                ev.preventDefault();
-                // User clicked a linked verse in their notebook. 
-                // We should parse the reference and search for it or open the reader.
-                dom.searchInput.value = reference;
-                dom.searchInput.focus();
-                switchView('reader');
-            });
-            
             verseLinkPopup.classList.add('hidden');
             linkVerseInput.value = '';
             currentSelectionRange = null;
-            
-            // Clean up selection
             window.getSelection().removeAllRanges();
         }
     });
-}
 
-// Make sure old saved links in the editor work when loaded
-notebookEditor?.addEventListener('click', (e) => {
-    if (e.target.tagName === 'A' && e.target.classList.contains('verse-link')) {
-        e.preventDefault();
-        const ref = e.target.getAttribute('data-ref');
-        if (ref) {
-            if(dom.searchInput) {
-                dom.searchInput.value = ref;
-                dom.searchInput.focus();
+    // ---- Calendar ----
+    function saveCalendarEvents() {
+        localStorage.setItem('torchbook_calendar_events', JSON.stringify(state.calendarEvents || {}));
+    }
+
+    function loadCalendarEvents() {
+        if (!state.calendarEvents) {
+            const saved = localStorage.getItem('torchbook_calendar_events');
+            state.calendarEvents = saved ? JSON.parse(saved) : {};
+        }
+    }
+
+    function renderCalendar() {
+        loadCalendarEvents();
+        if (!calGrid) return;
+        calGrid.innerHTML = '';
+        const year = calCurrentDate.getFullYear();
+        const month = calCurrentDate.getMonth();
+        const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        if (calMonthText) calMonthText.textContent = `${monthNames[month]} ${year}`;
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = new Date();
+        for (let i = 0; i < firstDay; i++) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'calendar-day empty-day';
+            calGrid.appendChild(emptyDiv);
+        }
+        for (let i = 1; i <= daysInMonth; i++) {
+            const dateId = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'calendar-day';
+            if (today.getFullYear() === year && today.getMonth() === month && today.getDate() === i) {
+                dayDiv.classList.add('today');
             }
-            switchView('reader');
-            setTimeout(() => {
-                dom.searchInput.dispatchEvent(new KeyboardEvent('keydown', {'key': 'Enter'}));
-            }, 300);
+            const numDiv = document.createElement('div');
+            numDiv.className = 'day-number';
+            numDiv.textContent = i;
+            dayDiv.appendChild(numDiv);
+            const eventsDiv = document.createElement('div');
+            eventsDiv.className = 'day-events';
+            if (state.calendarEvents && state.calendarEvents[dateId]) {
+                const ev = state.calendarEvents[dateId];
+                const pill = document.createElement('div');
+                pill.className = 'cal-event-pill';
+                pill.textContent = `${ev.time} ${ev.church}`;
+                eventsDiv.appendChild(pill);
+            }
+            dayDiv.appendChild(eventsDiv);
+            dayDiv.addEventListener('click', () => openEventModal(dateId, i, monthNames[month], year));
+            calGrid.appendChild(dayDiv);
         }
     }
-});
 
-// ---- Calendar Logic ----
-const viewCalendar = document.getElementById('view-calendar');
-const dashBtnCalendar = document.getElementById('dash-btn-calendar');
-const calendarBackBtn = document.getElementById('calendar-back-btn');
-const calGrid = document.getElementById('calendar-grid');
-const calMonthText = document.getElementById('calendar-current-month');
-const calPrevBtn = document.getElementById('cal-prev-month');
-const calNextBtn = document.getElementById('cal-next-month');
-
-const eventModal = document.getElementById('event-modal');
-const eventModalCloseBtn = document.getElementById('event-modal-close');
-const eventModalCancelBtn = document.getElementById('event-modal-cancel');
-const eventModalSaveBtn = document.getElementById('event-modal-save');
-const eventModalDeleteBtn = document.getElementById('event-modal-delete');
-const eventModalDateText = document.getElementById('event-modal-date');
-const eventDateIdInput = document.getElementById('event-date-id');
-const eventSermonSelect = document.getElementById('event-sermon-select');
-
-let currentDate = new Date();
-
-function saveCalendarEvents() {
-    localStorage.setItem('torchbook_calendar_events', JSON.stringify(state.calendarEvents || {}));
-}
-
-function loadCalendarEvents() {
-    if (!state.calendarEvents) {
-        const saved = localStorage.getItem('torchbook_calendar_events');
-        state.calendarEvents = saved ? JSON.parse(saved) : {};
-    }
-}
-
-function renderCalendar() {
-    loadCalendarEvents();
-    if (!calGrid) return;
-    
-    calGrid.innerHTML = '';
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
-    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-    if (calMonthText) calMonthText.textContent = `${monthNames[month]} ${year}`;
-    
-    // Empty boxes for days before start of month
-    for (let i = 0; i < firstDay; i++) {
-        const emptyDiv = document.createElement('div');
-        emptyDiv.className = 'calendar-day empty-day';
-        calGrid.appendChild(emptyDiv);
-    }
-    
-    const today = new Date();
-    const isCurrentMonth = (today.getMonth() === month && today.getFullYear() === year);
-    
-    for (let i = 1; i <= daysInMonth; i++) {
-        const dayDiv = document.createElement('div');
-        dayDiv.className = 'calendar-day';
-        if (isCurrentMonth && i === today.getDate()) {
-            dayDiv.classList.add('today');
+    function updateEventModalSermons() {
+        if (!eventSermonSelect) return;
+        eventSermonSelect.innerHTML = '<option value="">-- Ninguno / Predicación Libre --</option>';
+        if (state.sermons) {
+            Object.keys(state.sermons).forEach(id => {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = state.sermons[id].title || 'Sin Título';
+                eventSermonSelect.appendChild(opt);
+            });
         }
-        
-        const dateId = `${year}-${String(month+1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-        
-        const numDiv = document.createElement('div');
-        numDiv.className = 'day-number';
-        numDiv.textContent = i;
-        dayDiv.appendChild(numDiv);
-        
-        const eventsContainer = document.createElement('div');
-        eventsContainer.className = 'day-events';
-        
-        if (state.calendarEvents && state.calendarEvents[dateId]) {
-            const ev = state.calendarEvents[dateId];
-            const pill = document.createElement('div');
-            pill.className = 'cal-event-pill';
-            pill.textContent = `${ev.time} - ${ev.church}`;
-            eventsContainer.appendChild(pill);
-        }
-        
-        dayDiv.appendChild(eventsContainer);
-        
-        dayDiv.addEventListener('click', () => openEventModal(dateId, i, monthNames[month], year));
-        calGrid.appendChild(dayDiv);
     }
-}
 
-function updateEventModalSermons() {
-    if (!eventSermonSelect) return;
-    eventSermonSelect.innerHTML = '<option value="">-- Ninguno / Predicación Libre --</option>';
-    if (state.sermons) {
-        Object.keys(state.sermons).forEach(id => {
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.textContent = state.sermons[id].title || 'Sin Título';
-            eventSermonSelect.appendChild(opt);
-        });
+    function openEventModal(dateId, dayNum, monthName, year) {
+        if (!eventModal) return;
+        loadSermonsList();
+        updateEventModalSermons();
+        if (eventDateIdInput) eventDateIdInput.value = dateId;
+        if (eventModalDateText) eventModalDateText.textContent = `${dayNum} de ${monthName} de ${year}`;
+        const ev = state.calendarEvents && state.calendarEvents[dateId];
+        document.getElementById('event-church').value = ev ? (ev.church || '') : '';
+        document.getElementById('event-time').value = ev ? (ev.time || '10:00') : '10:00';
+        document.getElementById('event-theme').value = ev ? (ev.theme || '') : '';
+        document.getElementById('event-notes').value = ev ? (ev.notes || '') : '';
+        document.getElementById('event-sermon-select').value = ev ? (ev.sermonId || '') : '';
+        if (eventModalDeleteBtn) eventModalDeleteBtn.style.display = ev ? 'block' : 'none';
+        eventModal.classList.remove('hidden');
     }
-}
 
-function openEventModal(dateId, dayNum, monthName, year) {
-    if (!eventModal) return;
-    
-    // Ensure sermons are loaded so we can populate the dropdown
-    loadSermonsList();
-    updateEventModalSermons();
-    
-    eventDateIdInput.value = dateId;
-    eventModalDateText.textContent = `${dayNum} de ${monthName} de ${year}`;
-    
-    // Clear or fill form
-    if (state.calendarEvents && state.calendarEvents[dateId]) {
-        const ev = state.calendarEvents[dateId];
-        document.getElementById('event-church').value = ev.church || '';
-        document.getElementById('event-time').value = ev.time || '';
-        document.getElementById('event-theme').value = ev.theme || '';
-        document.getElementById('event-notes').value = ev.notes || '';
-        document.getElementById('event-sermon-select').value = ev.sermonId || '';
-        eventModalDeleteBtn.style.display = 'block';
-    } else {
-        document.getElementById('event-church').value = '';
-        document.getElementById('event-time').value = '10:00';
-        document.getElementById('event-theme').value = '';
-        document.getElementById('event-notes').value = '';
-        document.getElementById('event-sermon-select').value = '';
-        eventModalDeleteBtn.style.display = 'none';
+    function closeEventModal() {
+        if (eventModal) eventModal.classList.add('hidden');
     }
-    
-    eventModal.classList.remove('hidden');
-}
 
-function closeEventModal() {
-    if (eventModal) eventModal.classList.add('hidden');
-}
-
-function saveEvent() {
-    const dateId = eventDateIdInput.value;
-    if (!dateId) return;
-    
-    const church = document.getElementById('event-church').value.trim();
-    const time = document.getElementById('event-time').value;
-    const theme = document.getElementById('event-theme').value.trim();
-    
-    if (!church || !time || !theme) {
-        showToast('Por favor completa Iglesia, Hora y Tema');
-        return;
-    }
-    
-    if (!state.calendarEvents) state.calendarEvents = {};
-    
-    state.calendarEvents[dateId] = {
-        church,
-        time,
-        theme,
-        notes: document.getElementById('event-notes').value.trim(),
-        sermonId: document.getElementById('event-sermon-select').value
-    };
-    
-    saveCalendarEvents();
-    closeEventModal();
-    renderCalendar();
-    showToast('Evento agendado');
-}
-
-function deleteEvent() {
-    const dateId = eventDateIdInput.value;
-    if (dateId && state.calendarEvents && state.calendarEvents[dateId]) {
-        delete state.calendarEvents[dateId];
+    function saveEvent() {
+        const dateId = eventDateIdInput ? eventDateIdInput.value : null;
+        if (!dateId) return;
+        const church = document.getElementById('event-church').value.trim();
+        const time = document.getElementById('event-time').value;
+        const theme = document.getElementById('event-theme').value.trim();
+        if (!church || !time || !theme) { showToast('Completa Iglesia, Hora y Tema'); return; }
+        if (!state.calendarEvents) state.calendarEvents = {};
+        state.calendarEvents[dateId] = {
+            church, time, theme,
+            notes: document.getElementById('event-notes').value.trim(),
+            sermonId: document.getElementById('event-sermon-select').value
+        };
         saveCalendarEvents();
         closeEventModal();
         renderCalendar();
-        showToast('Evento eliminado');
+        showToast('Evento agendado ✓');
     }
-}
 
-// Calendar Event Listeners
-if (dashBtnCalendar) {
-    dashBtnCalendar.addEventListener('click', () => {
-        switchView('calendar');
-    });
-}
-
-if (calendarBackBtn) {
-    calendarBackBtn.addEventListener('click', () => switchView('dashboard'));
-}
-
-if (calPrevBtn) {
-    calPrevBtn.addEventListener('click', () => {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        renderCalendar();
-    });
-}
-
-if (calNextBtn) {
-    calNextBtn.addEventListener('click', () => {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        renderCalendar();
-    });
-}
-
-[eventModalCloseBtn, eventModalCancelBtn].forEach(btn => {
-    if (btn) btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        closeEventModal();
-    });
-});
-
-if (eventModalSaveBtn) {
-    eventModalSaveBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        saveEvent();
-    });
-}
-
-if (eventModalDeleteBtn) {
-    eventModalDeleteBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        deleteEvent();
-    });
-}
-
-// Modify switchView to also handle calendar
-const originalSwitchView = switchView;
-switchView = function(viewName) {
-    if (viewCalendar) viewCalendar.classList.add('hidden');
-    originalSwitchView(viewName);
-    
-    if (viewName === 'calendar') {
-        if (viewCalendar) viewCalendar.classList.remove('hidden');
-        renderCalendar();
-    }
-}
-
-// ---- Data Import / Export Logic ----
-const btnExportData = document.getElementById('btn-export-data');
-const btnImportData = document.getElementById('import-file'); // The hidden input file
-const dashBtnParallel = document.getElementById('dash-btn-parallel');
-
-if (dashBtnParallel) {
-    dashBtnParallel.addEventListener('click', () => {
-        const parallelToggle = document.getElementById('parallel-toggle');
-        if (parallelToggle && !state.parallelMode) {
-            parallelToggle.click(); // Activate parallel mode
+    function deleteEvent() {
+        const dateId = eventDateIdInput ? eventDateIdInput.value : null;
+        if (dateId && state.calendarEvents && state.calendarEvents[dateId]) {
+            delete state.calendarEvents[dateId];
+            saveCalendarEvents();
+            closeEventModal();
+            renderCalendar();
+            showToast('Evento eliminado');
         }
-        switchView('reader');
-    });
-}
+    }
 
-if (btnExportData) {
-    btnExportData.addEventListener('click', () => {
-        const dataToExport = {};
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key.startsWith('torchbook_')) {
-                dataToExport[key] = localStorage.getItem(key);
+    if (dashBtnCalendar) dashBtnCalendar.addEventListener('click', () => switchView('calendar'));
+    if (calendarBackBtn) calendarBackBtn.addEventListener('click', () => switchView('dashboard'));
+    if (calPrevBtn) calPrevBtn.addEventListener('click', () => { calCurrentDate.setMonth(calCurrentDate.getMonth() - 1); renderCalendar(); });
+    if (calNextBtn) calNextBtn.addEventListener('click', () => { calCurrentDate.setMonth(calCurrentDate.getMonth() + 1); renderCalendar(); });
+    [eventModalCloseBtn, eventModalCancelBtn].forEach(btn => { if (btn) btn.addEventListener('click', (e) => { e.preventDefault(); closeEventModal(); }); });
+    if (eventModalSaveBtn) eventModalSaveBtn.addEventListener('click', (e) => { e.preventDefault(); saveEvent(); });
+    if (eventModalDeleteBtn) eventModalDeleteBtn.addEventListener('click', (e) => { e.preventDefault(); deleteEvent(); });
+
+    // ---- Parallel from Dashboard ----
+    if (dashBtnParallel) {
+        dashBtnParallel.addEventListener('click', () => {
+            if (!state.parallelMode && dom.parallelToggle) dom.parallelToggle.click();
+            switchView('reader');
+        });
+    }
+
+    // ---- Import / Export ----
+    if (btnExportData) {
+        btnExportData.addEventListener('click', () => {
+            const dataToExport = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('torchbook_')) dataToExport[key] = localStorage.getItem(key);
             }
-        }
-        
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataToExport));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", `torchbook_backup_${new Date().toISOString().split('T')[0]}.json`);
-        document.body.appendChild(downloadAnchorNode); // required for firefox
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
-        showToast("Backup exportado correctamente");
-    });
-}
+            const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(dataToExport));
+            const a = document.createElement('a');
+            a.setAttribute('href', dataStr);
+            a.setAttribute('download', `torchbook_backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            showToast('Backup exportado ✓');
+        });
+    }
 
-if (btnImportData) {
-    btnImportData.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const importedData = JSON.parse(e.target.result);
-                let count = 0;
-                for (const key in importedData) {
-                    if (key.startsWith('torchbook_')) {
-                        localStorage.setItem(key, importedData[key]);
-                        count++;
+    if (btnImportData) {
+        btnImportData.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    let count = 0;
+                    for (const key in importedData) {
+                        if (key.startsWith('torchbook_')) { localStorage.setItem(key, importedData[key]); count++; }
                     }
+                    if (count > 0) {
+                        alert('Datos importados. La app se recargará.');
+                        window.location.reload();
+                    } else {
+                        showToast('El archivo no contiene datos válidos.');
+                    }
+                } catch (err) {
+                    showToast('Error al leer el archivo.');
                 }
-                if (count > 0) {
-                    alert('Datos importados correctamente. La aplicación se recargará para aplicar los cambios.');
-                    window.location.reload();
-                } else {
-                    showToast('El archivo no contiene datos válidos de Torchbook');
-                }
-            } catch (err) {
-                showToast('Error al leer el archivo. Formato inválido.');
-                console.error(err);
-            }
-        };
-        reader.readAsText(file);
-    });
-}
-
-// Logo takes you to Dashboard now
-if (logoBtn) {
-    logoBtn.addEventListener('click', () => {
-        switchView('dashboard');
-    });
-}
-
-// Set initial view to Dashboard
-switchView('dashboard');
-
-// --- Mobile Navigation & Settings Logic ---
-const bottomNav = document.getElementById('bottom-nav');
-const mobileSettingsSheet = document.getElementById('mobile-settings-sheet');
-const mobileSheetOverlay = document.getElementById('mobile-sheet-overlay');
-const closeMobileSettingsBtn = document.getElementById('close-mobile-settings');
-
-const navHome = document.getElementById('nav-home');
-const navDictionary = document.getElementById('nav-dictionary');
-const navPlans = document.getElementById('nav-plans');
-const navSettings = document.getElementById('nav-settings');
-
-function updateActiveNav(activeBtn) {
-    [navHome, navDictionary, navPlans, navSettings].forEach(btn => {
-        if(btn) btn.classList.remove('active');
-    });
-    if(activeBtn) activeBtn.classList.add('active');
-}
-
-if (navHome) {
-    navHome.addEventListener('click', () => {
-        updateActiveNav(navHome);
-        switchView('reader');
-        window.scrollTo(0, 0);
-        // Cierra modales si estuvieran abiertos
-        const modales = document.querySelectorAll('.modal');
-        modales.forEach(m => m.classList.add('hidden'));
-    });
-}
-
-if (navDictionary) {
-    navDictionary.addEventListener('click', () => {
-        updateActiveNav(navDictionary);
-        const btnOpenDict = document.getElementById('btn-open-dictionary');
-        if (btnOpenDict) btnOpenDict.click();
-    });
-}
-
-if (navPlans) {
-    navPlans.addEventListener('click', () => {
-        updateActiveNav(navPlans);
-        const btnOpenPlans = document.getElementById('btn-open-reading-plans');
-        if (btnOpenPlans) btnOpenPlans.click();
-    });
-}
-
-function openMobileSettings() {
-    updateActiveNav(navSettings);
-    if (mobileSettingsSheet) {
-        mobileSettingsSheet.classList.remove('hidden');
+            };
+            reader.readAsText(file);
+        });
     }
-}
 
-function closeMobileSettings() {
-    updateActiveNav(navHome); // Vuelve a marcar inicio
-    if (mobileSettingsSheet) {
-        mobileSettingsSheet.classList.add('hidden');
-    }
-}
+    // Trigger Dashboard on first load
+    switchView('dashboard');
 
-if (navSettings) {
-    navSettings.addEventListener('click', openMobileSettings);
-}
-
-if (closeMobileSettingsBtn) {
-    closeMobileSettingsBtn.addEventListener('click', closeMobileSettings);
-}
-
-if (mobileSheetOverlay) {
-    mobileSheetOverlay.addEventListener('click', closeMobileSettings);
-}
-
-// Conectar controles del Modal Móvil con los globales
-const mobileThemeOptions = document.querySelectorAll('.mobile-sheet .theme-option');
-mobileThemeOptions.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        // Simular clic en el menú real
-        const theme = e.target.getAttribute('data-theme');
-        const realThemeBtn = document.querySelector(`.theme-dropdown-menu .theme-option[data-theme="${theme}"]`);
-        if (realThemeBtn) realThemeBtn.click();
-        
-        // Actualizar UI móvil
-        mobileThemeOptions.forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-    });
-});
-
-const mobileFontDec = document.getElementById('mobile-font-decrease');
-const mobileFontInc = document.getElementById('mobile-font-increase');
-const mobileFontToggle = document.getElementById('mobile-font-family-toggle');
-if (mobileFontDec) mobileFontDec.addEventListener('click', () => document.getElementById('font-decrease')?.click());
-if (mobileFontInc) mobileFontInc.addEventListener('click', () => document.getElementById('font-increase')?.click());
-if (mobileFontToggle) mobileFontToggle.addEventListener('click', () => document.getElementById('font-family-toggle')?.click());
-
-const mobileVerSelect = document.getElementById('mobile-version-select');
-if (mobileVerSelect) {
-    mobileVerSelect.addEventListener('change', (e) => {
-        const realVerSelect = document.getElementById('version-select');
-        if (realVerSelect) {
-            realVerSelect.value = e.target.value;
-            realVerSelect.dispatchEvent(new Event('change'));
-        }
-    });
-}
-
-const mobileParallelToggle = document.getElementById('mobile-parallel-toggle');
-const mobileParallelSelect = document.getElementById('mobile-parallel-version-select');
-if (mobileParallelToggle) {
-    mobileParallelToggle.addEventListener('click', () => {
-        const realParallelToggle = document.getElementById('parallel-toggle');
-        if (realParallelToggle) realParallelToggle.click();
-        
-        if (mobileParallelSelect.classList.contains('hidden')) {
-            mobileParallelSelect.classList.remove('hidden');
-            mobileParallelToggle.textContent = "Desactivar";
-        } else {
-            mobileParallelSelect.classList.add('hidden');
-            mobileParallelToggle.textContent = "Activar";
-        }
-    });
-}
-
-if (mobileParallelSelect) {
-    mobileParallelSelect.addEventListener('change', (e) => {
-        const realParallelSelect = document.getElementById('parallel-version-select');
-        if (realParallelSelect) {
-            realParallelSelect.value = e.target.value;
-            realParallelSelect.dispatchEvent(new Event('change'));
-        }
-    });
-}
-
-// Sincronizar selectores iniciales
-if (mobileVerSelect && document.getElementById('version-select')) {
-    mobileVerSelect.value = document.getElementById('version-select').value;
-}
-
-// --- PWA Installation Logic ---
-let deferredPrompt;
-const pwaToast = document.getElementById('pwa-install-toast');
-const pwaInstallBtn = document.getElementById('pwa-install-btn');
-const pwaDismissBtn = document.getElementById('pwa-dismiss-btn');
-
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    if (pwaToast) {
-        pwaToast.classList.remove('hidden');
-        setTimeout(() => pwaToast.classList.add('show'), 100);
-    }
-});
-
-if (pwaInstallBtn) {
-    pwaInstallBtn.addEventListener('click', async () => {
-        if (!deferredPrompt) return;
-        
-        pwaToast.classList.remove('show');
-        setTimeout(() => pwaToast.classList.add('hidden'), 400);
-
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`User response to the install prompt: ${outcome}`);
-        
-        deferredPrompt = null;
-    });
-}
-
-if (pwaDismissBtn) {
-    pwaDismissBtn.addEventListener('click', () => {
-        pwaToast.classList.remove('show');
-        setTimeout(() => pwaToast.classList.add('hidden'), 400);
-    });
-}
-
-window.addEventListener('appinstalled', () => {
-    if (pwaToast) {
-        pwaToast.classList.remove('show');
-        setTimeout(() => pwaToast.classList.add('hidden'), 400);
-    }
-    deferredPrompt = null;
-    console.log('PWA was installed');
-});
+    init();
 
 })();
