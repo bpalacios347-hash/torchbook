@@ -3429,8 +3429,11 @@ body {
 
 @media (max-width: 768px) {
     .parallel-verses-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
+        gap: 0.5rem;
+    }
+    
+    .parallel-column-header {
+        font-size: 0.75rem;
     }
 }
 
