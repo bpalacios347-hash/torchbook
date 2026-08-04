@@ -2671,7 +2671,7 @@ function switchView(viewName) {
     } else if (viewName === 'notebook') {
         if (viewNotebook) viewNotebook.classList.remove('hidden');
         loadSermonsList();
-    if (viewName === 'calendar') {
+    } else if (viewName === 'calendar') {
         if (typeof viewCalendar !== 'undefined' && viewCalendar) viewCalendar.classList.remove('hidden');
         if (typeof renderCalendar === 'function') renderCalendar();
     }
